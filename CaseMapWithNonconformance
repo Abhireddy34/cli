@@ -1,0 +1,34 @@
+trigger CaseMapWithNonconformance on Case (after insert, after update) {
+    
+    list<Nonconformance__c> updateNonPerformance = new List<Nonconformance__c>();
+    List<Case> updateCase = new List<Case>();
+    set<id> caseIds = new set<id>();
+    for(Case caseDetails : Trigger.new){
+        if(caseDetails.Type == 'Problem'){
+            Nonconformance__c nonFormance = new Nonconformance__c();
+            nonFormance.Priority__c = caseDetails.Priority;
+            nonFormance.Description__c = caseDetails.Description;
+            nonFormance.Title__c = caseDetails.Subject;             
+            updateNonPerformance.add(nonFormance);
+           
+        }
+    }
+    insert updateNonPerformance;
+
+    Map<List<Nonconformance__c> , list<Case>> mapValues = new Map<List<Nonconformance__c> , list<Case>>();
+    
+    system.debug('mapValues====>'+mapValues);
+    
+    list<Nonconformance__c> ncDetails = [Select id ,Priority__c,Description__c,Title__c from Nonconformance__c];
+    system.debug('ncDetails======>'+ncDetails);
+    List<Case> caseData = [Select id,SQX_NC_Reference__c,Priority,Description,Subject from case where SQX_NC_Reference__c = Null];
+    for(Nonconformance__c nc : ncDetails){
+        for(Case caseD : caseData){
+            if(caseD.Priority == nc.Priority__c && caseD.Description == nc.Description__c && caseD.Subject == nc.Title__c){
+                caseD.SQX_NC_Reference__c = nc.Id;
+                updateCase.add(caseD);
+            }
+        }        
+    }
+    update updateCase;
+}
